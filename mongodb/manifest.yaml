@@ -1,0 +1,70 @@
+apiversion: v1
+kind: services
+metadata:
+   name: mongodb
+   namespace: mongodb
+spec:
+ selector:
+   project: roboshop
+   component: mongodb
+   tier: db
+   imagepullpolicy: always
+ports:
+    - protocol: tcp
+      port: 27017 #services port
+      targetport: 27017  #containers port
+---
+apiversion: v1
+kind: services
+metadata:
+   name: mongodb-headless
+   namespace: mongodb
+spec:
+ clusterip: None
+ selector:
+   project: roboshop
+   component: mongodb
+   tier: db
+   imagepullpolicy: always
+ports:
+    - protocol: tcp
+      port: 27017 #services port
+      targetport: 27017  #containers port   
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongodb
+  namespace: roboshop
+spec:
+  selector:
+    matchLabels:
+      project: roboshop
+      component: mongodb
+      tier: db
+  serviceName: "mongodb-headless"
+  replicas: 2 # by default is 1
+  template:
+    metadata:
+      labels:
+      project: roboshop
+      component: mongodb
+      tier: db
+    spec:
+      containers:
+      - name: mongodb
+        image: pullfrom dockerhub
+        volumeMounts:
+        - name: mongodb
+          mountPath: /data/db
+  #This is PVC
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "roboshop-ebs"
+      resources:
+        requests:
+          storage: 1Gi             
