@@ -1,0 +1,7 @@
+apiversion: v1
+kind: namespace
+metadata:
+  name: roboshop
+  labels:    # FIXED: added labels section it is mandatory for adding labels
+    name: roboshop
+    environment: develpopment
