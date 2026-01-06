@@ -1,0 +1,103 @@
+apiversion: v1
+kind: configmap
+metadata:
+  name: catalogue
+  namespace: roboshop
+data:
+ MONGO: "true"
+ MONGO_URL: "mongodb://mongodb:27017/catalogue"
+---
+apiversion: app/v1
+kind: Deployment
+metadata:
+ name: catalogue
+ namespace: roboshop
+ #this labels are replecaset labels
+ labels:
+   project: roboshop
+   component: catalogue
+   tier: backend
+spec:
+ replicas: 1
+ selector:
+ # this lablels used to  select the pods
+  matchlabels:
+   project: roboshop
+   component: catalogue
+   tier: backend
+   imagepullpolicy: always
+   envfrom:
+    - configmapref:
+        name: catalogue
+   #pod defention
+  templects:
+    metadata:
+      labels:
+      project: roboshop
+      component: catalogue
+      tier: backend
+    spec:
+      containers:
+      - name: catalogue
+        image: pullfrom dockerhub
+      ports:
+      - name: liveness-port
+        containerport: 8080  
+      resources:  
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"  
+
+      rednessProbe:
+          httpget:
+            path: /helth
+            port: liveness-port
+
+      livenessProbe:
+          httpget:
+            path: /helth
+            port: liveness-port   
+
+---
+apiversion: v1
+kind: services
+metadata:
+   name: catalogue
+   namespace: catalogue
+spec:
+ selector:
+   project: roboshop
+   component: catalogue
+   tier: backend
+ports:
+    - protocol: tcp
+      port: 8080 #services port
+      targetport: 8080  #containers port
+---
+apiversion: autoscaling/v2  
+kind: HorizontalPodAutoscaler
+metadata:
+ name: catalogue
+labels:
+    project: roboshop
+    component: catalogue
+    tier: backend  
+spec:
+ scaleTargetRef:
+   apiVersion: app/v1
+   kind: Deployment
+   name: catalogue
+ minReplicas: 1
+ maxReplicas: 10
+ metrics:
+ - type: Resource
+   resource:
+     name: cpu
+     target:
+       type: Utilization
+       averageUtilization: 5 # in projects up to 70 we can give
+
+        

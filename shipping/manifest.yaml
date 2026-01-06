@@ -1,0 +1,103 @@
+apiversion: v1
+kind: configmap
+metadata:
+  name: shipping
+  namespace: roboshop
+data:
+ CART_ENDPOINT: "cart:8080"
+ DB_HOST: "mysql"
+---
+apiversion: app/v1
+kind: Deployment
+metadata:
+ name: shipping
+ namespace: roboshop
+ #this labels are replecaset labels
+ labels:
+   project: roboshop
+   component: shipping
+   tier: backend
+spec:
+ replicas: 1
+ selector:
+ # this lablels used to  select the pods
+  matchlabels:
+   project: roboshop
+   component: shipping
+   tier: backend
+   imagepullpolicy: always
+   envfrom:
+    - configmapref:
+        name: shipping
+   #pod defention
+  templects:
+    metadata:
+      labels:
+      project: roboshop
+      component: shipping
+      tier: backend
+    spec:
+      containers:
+      - name: shipping
+        image: pullfrom dockerhub
+      ports:
+      - name: liveness-port
+        containerport: 8080  
+      resources:  
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"  
+
+      rednessProbe:
+          httpget:
+            path: /helth
+            port: liveness-port
+
+      livenessProbe:
+          httpget:
+            path: /helth
+            port: liveness-port   
+
+---
+apiversion: v1
+kind: services
+metadata:
+   name: shipping
+   namespace: shipping
+spec:
+ selector:
+   project: roboshop
+   component: shipping
+   tier: backend
+ports:
+    - protocol: tcp
+      port: 8080 #services port
+      targetport: 8080  #containers port
+---
+apiversion: autoscaling/v2  
+kind: HorizontalPodAutoscaler
+metadata:
+ name: shipping
+labels:
+    project: roboshop
+    component: shipping
+    tier: backend  
+spec:
+ scaleTargetRef:
+   apiVersion: app/v1
+   kind: Deployment
+   name: shipping
+ minReplicas: 1
+ maxReplicas: 10
+ metrics:
+ - type: Resource
+   resource:
+     name: cpu
+     target:
+       type: Utilization
+       averageUtilization: 5 # in projects up to 70 we can give
+
+        
