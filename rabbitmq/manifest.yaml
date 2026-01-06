@@ -1,0 +1,75 @@
+apiversion: v1
+kind: services
+metadata:
+   name: rabbitmq
+   namespace: rabbitmq
+spec:
+ selector:
+   project: roboshop
+   component: rabbitmq
+   tier: db
+   imagepullpolicy: always
+ports:
+    - protocol: tcp
+      port: 6379 #services port
+      targetport: 6379  #containers port
+---
+apiversion: v1
+kind: services
+metadata:
+   name: rabbitmq-headless
+   namespace: rabbitmq
+spec:
+ clusterip: None
+ selector:
+   project: roboshop
+   component: rabbitmq
+   tier: db
+   imagepullpolicy: always
+ports:
+    - protocol: tcp
+      port: 5672 #services port
+      targetport: 5672  #containers port   
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: roboshop
+spec:
+  selector:
+    matchLabels:
+      project: roboshop
+      component: rabbitmq
+      tier: db
+  serviceName: "rabbitmq-headless"
+  replicas: 2 # by default is 1
+  template:
+    metadata:
+      labels:
+      project: roboshop
+      component: rabbitmq
+      tier: db
+    spec:
+      containers:
+      - name: rabbitmq
+        image: pullfrom dockerhub
+        volumeMounts:
+        - name: rabbitmq
+          mountPath: /data
+        env:
+         - name: RABBITMQ_DEFAULT_USER
+           value: roboshop
+         - name: RABBITMQ_DEFAULT_PASS
+           value: roboshop123  
+  #This is PVC
+  volumeClaimTemplates:
+  - metadata:
+      name: rabbitmq
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "roboshop-ebs"
+      resources:
+        requests:
+          storage: 1Gi             
