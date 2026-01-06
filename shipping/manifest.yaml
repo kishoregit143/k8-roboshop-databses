@@ -55,11 +55,17 @@ spec:
           httpget:
             path: /helth
             port: liveness-port
+            failurethreshold: 1
+            periodseconds: 15
+            initialdelayseconds: 60
 
       livenessProbe:
           httpget:
             path: /helth
-            port: liveness-port   
+            port: liveness-port  
+            failurethreshold: 1
+            periodseconds: 15
+            initialdelayseconds: 60 
 
 ---
 apiversion: v1
